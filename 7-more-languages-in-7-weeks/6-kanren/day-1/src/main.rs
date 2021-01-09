@@ -1,3 +1,4 @@
+use mini_kanren::prelude::*;
 use mini_kanren::*;
 
 fn main() {
