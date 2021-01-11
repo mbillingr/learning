@@ -60,6 +60,8 @@ def calc_pure_python(desired_width, max_iterations):
     # It ensures that our code evolves exactly as we'd intended
     assert sum(output) == 33219980
 
+    return output
+
 
 @timefn
 def calculate_z_serial_purepython(maxiter, zs, cs):
@@ -77,4 +79,9 @@ def calculate_z_serial_purepython(maxiter, zs, cs):
 if __name__ == '__main__':
     # Calculate the Julia set using a pure Python solution with
     # reasonable defaults for a laptop
-    calc_pure_python(desired_width=1000, max_iterations=300)
+    output = calc_pure_python(desired_width=1000, max_iterations=300)
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+    plt.imshow(np.reshape(output, (1000, 1000)))
+    plt.show()
