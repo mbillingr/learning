@@ -20,7 +20,7 @@ class Batch:
         self.reference = ref
         self.sku = sku
         self.eta = eta
-        self._purchased_qty = qty
+        self._purchased_quantity = qty
         self._allocations = set()
 
     def allocate(self, line: OrderLine):
@@ -33,7 +33,7 @@ class Batch:
 
     @property
     def available_quantity(self) -> int:
-        return self._purchased_qty - self.allocated_quantity
+        return self._purchased_quantity - self.allocated_quantity
 
     @property
     def allocated_quantity(self) -> int:
@@ -50,6 +50,17 @@ class Batch:
             return True
 
         return self.eta > other.eta
+
+    def __eq__(self, other):
+        if not isinstance(other, Batch):
+            return False
+        return other.reference == self.reference
+
+    def __hash__(self):
+        return hash(self.reference)
+
+    def __repr__(self):
+        return f'<Batch {self.reference}>'
 
 
 def allocate(line: OrderLine, batches: Sequence[Batch]) -> str:
