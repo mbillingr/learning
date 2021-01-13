@@ -6,9 +6,11 @@ from typing import Optional, Sequence
 class OutOfStock(Exception): pass
 
 
-@dataclass(frozen=True)
+# Can't freeze but SQLAlchemy needs to inject attributes.
+# Let's promise not to mutate OrderLines...
+@dataclass(unsafe_hash=True)
 class OrderLine:
-    order_id: str
+    orderid: str
     sku: str
     qty: int
 
