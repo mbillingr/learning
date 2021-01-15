@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 
-from model import allocate, Batch, OrderLine, OutOfStock
+from domain.model import allocate, Batch, OrderLine, OutOfStock
 
 today = date(year=2020, month=1, day=1)
 tomorrow = date(year=2020, month=1, day=2)

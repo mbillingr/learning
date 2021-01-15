@@ -1,8 +1,8 @@
 import pytest
 
-import model
-import services
-from repository import FakeRepository
+from domain import model
+from service_layer import services
+from adapters.repository import FakeRepository
 
 
 def test_returns_allocation():
@@ -31,6 +31,19 @@ def test_commits():
 
     services.allocate(line, repo, session)
     assert session.commited is True
+
+
+def test_deallocate_removes_line_from_batch():
+    line = model.OrderLine("o1", "COMPLICATED-LAMP", 10)
+    batch = model.Batch("b1", "COMPLICATED-LAMP", 100, eta=None)
+    batch.allocate(line)
+    repo = FakeRepository([batch])
+
+    assert batch.available_quantity == 90
+
+    services.deallocate(line, "b1", repo, FakeSession())
+
+    assert batch.available_quantity == 100
 
 
 class FakeSession():
