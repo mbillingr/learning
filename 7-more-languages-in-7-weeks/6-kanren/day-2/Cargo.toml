@@ -1,10 +1,10 @@
 [package]
-name = "day-1"
+name = "day-2"
 version = "0.1.0"
-authors = ["Martin Billinger <flkazemakase@gmail.com>"]
+authors = ["Martin Billinger <mbillingr@users.noreply.github.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-mini-kanren = "0.3.2"
+mini-kanren = "0.3.5"
