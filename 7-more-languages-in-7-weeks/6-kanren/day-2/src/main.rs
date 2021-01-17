@@ -1,17 +1,24 @@
 //! Demonstrate different kinds of cond
 
+use mini_kanren::goals::list::{conso, membero};
 use mini_kanren::prelude::*;
-use mini_kanren::goals::list::{membero, conso};
-use mini_kanren::{run, defrel, conj, conda, condu, conde, list, fresh};
-
+use mini_kanren::{conda, conde, condu, conj, defrel, fresh, list, run};
 
 fn main() {
-    println!("Which list contains 3 using conde? {:?}", run!(*, q, whiche(3, list![1, 2, 3], list![3, 4, 5], q)));
-    println!("Which list contains 3 using conda? {:?}", run!(*, q, whicha(3, list![1, 2, 3], list![3, 4, 5], q)));
+    println!(
+        "Which list contains 3 using conde? {:?}",
+        run!(*, q, whiche(3, list![1, 2, 3], list![3, 4, 5], q))
+    );
+    println!(
+        "Which list contains 3 using conda? {:?}",
+        run!(*, q, whicha(3, list![1, 2, 3], list![3, 4, 5], q))
+    );
 
-    println!("Insideo with condu returns only one possibility: {:?}", run!(*, q, insideo(q, list![1, 2, 3, 4])));
+    println!(
+        "Insideo with condu returns only one possibility: {:?}",
+        run!(*, q, insideo(q, list![1, 2, 3, 4]))
+    );
 }
-
 
 defrel! {
     /// Create a goal that succeeds if x occurs in s1 or s2 and r contains the correct result
@@ -23,7 +30,6 @@ defrel! {
         }
     }
 }
-
 
 defrel! {
     /// Create a goal that succeeds if x occurs in s1 or s2 and r contains the correct result

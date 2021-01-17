@@ -1,6 +1,8 @@
-use mini_kanren::goals::list::{membero, conso};
-use mini_kanren::{conde, eq, list, run, Goal, db_facts, db_rel, defrel, Value, Substitution, fresh, Stream};
 use mini_kanren::database::Database;
+use mini_kanren::goals::list::{conso, membero};
+use mini_kanren::{
+    conde, db_facts, db_rel, defrel, eq, fresh, list, run, Goal, Stream, Substitution, Value,
+};
 use std::sync::Arc;
 
 fn main() {
@@ -26,10 +28,13 @@ fn main() {
 
 fn exercise1() {
     println!("\nExercise 1\n----------");
-    println!("{:?}", run!(*, q,
-        membero(q, list![1, 2, 3, "foo"]),
-        membero(q, list![3, 4, 5, "foo"]),
-    ));
+    println!(
+        "{:?}",
+        run!(*, q,
+            membero(q, list![1, 2, 3, "foo"]),
+            membero(q, list![3, 4, 5, "foo"]),
+        )
+    );
 }
 
 fn exercise6() {
@@ -69,7 +74,11 @@ fn exercise6() {
         }
     };
 
-    fn ancestoro(db: &Arc<Database>, ancestor: impl Into<Value>, descendant: impl Into<Value>) -> impl Goal<Substitution<'static>> {
+    fn ancestoro(
+        db: &Arc<Database>,
+        ancestor: impl Into<Value>,
+        descendant: impl Into<Value>,
+    ) -> impl Goal<Substitution<'static>> {
         let ancestor = ancestor.into();
         let descendant = descendant.into();
         conde! {
@@ -81,10 +90,14 @@ fn exercise6() {
         }
     }
 
-    fn siblingo(db: &Arc<Database>, a: impl Into<Value>, b: impl Into<Value>) -> impl Goal<Substitution<'static>> {
+    fn siblingo(
+        db: &Arc<Database>,
+        a: impl Into<Value>,
+        b: impl Into<Value>,
+    ) -> impl Goal<Substitution<'static>> {
         let a = a.into();
         let b = b.into();
-        fresh!{ (parent),
+        fresh! { (parent),
             childo(db, parent, a.clone()),
             childo(db, parent, b.clone()),
             not_eqc(a.clone(), b.clone()),
@@ -104,7 +117,15 @@ fn exercise6() {
     let db = Arc::new(db);
 
     let person = "Bart";
-    println!("Ancestors of {}: {:?}", person, run!(*, q, ancestoro(&db, q, person)));
+    println!(
+        "Ancestors of {}: {:?}",
+        person,
+        run!(*, q, ancestoro(&db, q, person))
+    );
 
-    println!("Siblings of {}: {:?}", person, run!(*, q, siblingo(&db, person, q)));
+    println!(
+        "Siblings of {}: {:?}",
+        person,
+        run!(*, q, siblingo(&db, person, q))
+    );
 }
