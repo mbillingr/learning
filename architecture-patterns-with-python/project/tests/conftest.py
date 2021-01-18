@@ -5,7 +5,6 @@ import pytest
 import requests
 from requests import ConnectionError
 from sqlalchemy import create_engine
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker, clear_mappers
 
 import config
@@ -20,10 +19,15 @@ def in_memory_db():
 
 
 @pytest.fixture
-def session(in_memory_db):
+def session_factory(in_memory_db):
     start_mappers()
-    yield sessionmaker(bind=in_memory_db)()
+    yield sessionmaker(bind=in_memory_db)
     clear_mappers()
+
+
+@pytest.fixture
+def session(session_factory):
+    return session_factory()
 
 
 @pytest.fixture
