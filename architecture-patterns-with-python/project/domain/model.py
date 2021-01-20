@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import date
-from typing import Optional, Sequence
+from typing import Optional, Sequence, List
 
 
 class OutOfStock(Exception): pass
@@ -63,10 +63,25 @@ class Batch:
         return f'<Batch {self.reference}>'
 
 
-def allocate(line: OrderLine, batches: Sequence[Batch]) -> str:
-    try:
-        batch = min(b for b in batches if b.can_allocate(line))
-    except ValueError:
-        raise OutOfStock(f'Out of stock: {line.sku}')
-    batch.allocate(line)
-    return batch.reference
+class Product:
+    def __init__(self, sku: str, batches: List[Batch]):
+        self.sku = sku
+        self.batches = batches
+
+    def allocate(self, line: OrderLine) -> str:
+        try:
+            batch = min(b for b in self.batches if b.can_allocate(line))
+        except ValueError:
+            raise OutOfStock(f'Out of stock: {line.sku}')
+        batch.allocate(line)
+        return batch.reference
+
+    def get_batch(self, batchref: str):
+        try:
+            return next(b for b in self.batches if b.reference == batchref)
+        except StopIteration:
+            return None
+
+    def deallocate(self, line: OrderLine, batchref):
+        batch = self.get_batch(batchref)
+        batch.deallocate(line)

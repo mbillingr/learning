@@ -13,7 +13,8 @@ later = date(year=2020, month=2, day=1)
 def test_add_batch():
     uow = FakeUnitOfWork()
     services.add_batch("b1", "CRUNCHY-ARMCHAIR", 100, None, uow)
-    assert uow.batches.get("b1") is not None
+    product = uow.products.get("CRUNCHY-ARMCHAIR")
+    assert product.get_batch("b1") is not None
     assert uow.commited
 
 
@@ -44,11 +45,11 @@ def test_deallocate_removes_line_from_batch():
     services.add_batch("b1", "COMPLICATED-LAMP", 100, None, uow)
 
     services.allocate("o1", "COMPLICATED-LAMP", 10, uow)
-    assert uow.batches.get("b1").available_quantity == 90
+    assert uow.products.get("COMPLICATED-LAMP").get_batch("b1").available_quantity == 90
 
     services.deallocate("o1", "COMPLICATED-LAMP", 10, "b1", uow)
 
-    assert uow.batches.get("b1").available_quantity == 100
+    assert uow.products.get("COMPLICATED-LAMP").get_batch("b1").available_quantity == 100
 
 
 def test_prefers_warehouse_batches_to_shipments():
@@ -58,27 +59,30 @@ def test_prefers_warehouse_batches_to_shipments():
 
     services.allocate('oref', "RETRO-CLOCK", 10, uow)
 
-    assert uow.batches.get('in-stock-batch').available_quantity == 90
-    assert uow.batches.get('shipment-batch').available_quantity == 100
+    assert uow.products.get("RETRO-CLOCK").get_batch('in-stock-batch').available_quantity == 90
+    assert uow.products.get("RETRO-CLOCK").get_batch('shipment-batch').available_quantity == 100
 
 
-class FakeRepository(repository.AbstractRepository):
-    def __init__(self, batches):
-        self._batches = set(batches)
+class FakeRepository(repository.AbstractProductRepository):
+    def __init__(self, products):
+        self._products = set(products)
 
-    def add(self, batch):
-        self._batches.add(batch)
+    def add(self, product):
+        self._products.add(product)
 
-    def get(self, reference):
-        return next(b for b in self._batches if b.reference == reference)
+    def get(self, sku):
+        try:
+            return next(p for p in self._products if p.sku == sku)
+        except StopIteration:
+            return None
 
     def list(self):
-        return list(self._batches)
+        return list(self._products)
 
 
 class FakeUnitOfWork(unit_of_work.AbstractUnitOfWork):
     def __init__(self):
-        self.batches = FakeRepository([])
+        self.products = FakeRepository([])
         self.commited = False
 
     def commit(self):
