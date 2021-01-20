@@ -11,7 +11,7 @@ class AbstractUnitOfWork(abc.ABC):
     products: repository.AbstractProductRepository
 
     def __enter__(self):
-        pass
+        return self
 
     def __exit__(self, *args):
         self.rollback()
@@ -25,7 +25,7 @@ class AbstractUnitOfWork(abc.ABC):
         raise NotImplementedError()
 
 
-DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine(config.get_postgres_uri(), ))
+DEFAULT_SESSION_FACTORY = sessionmaker(bind=create_engine('sqlite:///:memory:'), )
 
 
 class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
@@ -34,7 +34,7 @@ class SqlAlchemyUnitOfWork(AbstractUnitOfWork):
 
     def __enter__(self):
         self.session = self.session_factory()  # type: Session
-        self.batches = repository.SqlAlchemyRepository(self.session)
+        self.products = repository.SqlAlchemyRepository(self.session)
         return super().__enter__()
 
     def __exit__(self, *args):

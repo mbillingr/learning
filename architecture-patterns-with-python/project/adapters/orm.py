@@ -24,6 +24,7 @@ batches = Table(
 products = Table(
     'products', metadata,
     Column('id', Integer, primary_key=True, autoincrement=True),
+    Column('version_number', Integer, nullable=False),
     Column('sku', String(255)),)
 
 allocations = Table(
