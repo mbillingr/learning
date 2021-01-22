@@ -22,5 +22,6 @@ def send_out_of_stock_notification(event: events.OutOfStock):
 HANDLERS = {
     events.AllocationRequired: [handlers.allocate],
     events.BatchCreated: [handlers.add_batch],
+    events.BatchQuantityChanged: [handlers.change_batch_quantity],
     events.OutOfStock: [handlers.send_out_of_stock_notification],
 }  # type: Dict[Type[events.Event], List[Callable]]

@@ -16,6 +16,12 @@ class BatchCreated(Event):
 
 
 @dataclass
+class BatchQuantityChanged(Event):
+    ref: str
+    qty: int
+
+
+@dataclass
 class OutOfStock(Event):
     sku: str
 
