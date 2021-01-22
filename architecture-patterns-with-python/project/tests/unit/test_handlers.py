@@ -9,51 +9,58 @@ from typing import List
 class TestAddBatch:
     def test_for_new_product(self):
         uow = FakeUnitOfWork()
-        messagebus.handle(events.BatchCreated("b1", "CRUNCHY-ARMCHAIR", 100, None), uow)
+        mb = messagebus.MessageBus()
+        mb.handle(events.BatchCreated("b1", "CRUNCHY-ARMCHAIR", 100, None), uow)
         assert uow.products.get('CRUNCHY-ARMCHAIR') is not None
         assert uow.committed
 
     def test_for_existing_product(self):
         uow = FakeUnitOfWork()
-        messagebus.handle(events.BatchCreated("b1", "GARISH-RUG", 100, None), uow)
-        messagebus.handle(events.BatchCreated("b2", "GARISH-RUG", 99, None), uow)
+        mb = messagebus.MessageBus()
+        mb.handle(events.BatchCreated("b1", "GARISH-RUG", 100, None), uow)
+        mb.handle(events.BatchCreated("b2", "GARISH-RUG", 99, None), uow)
         assert "b2" in [b.reference for b in uow.products.get("GARISH-RUG").batches]
 
 
 class TestAllocate:
     def test_returns_allocation(self):
         uow = FakeUnitOfWork()
-        messagebus.handle(events.BatchCreated("batch1", "COMPLICATED-LAMP", 100, None), uow)
-        result = messagebus.handle(events.AllocationRequired("o1", "COMPLICATED-LAMP", 10), uow)
+        mb = messagebus.MessageBus()
+        mb.handle(events.BatchCreated("batch1", "COMPLICATED-LAMP", 100, None), uow)
+        result = mb.handle(events.AllocationRequired("o1", "COMPLICATED-LAMP", 10), uow)
         assert result == ["batch1"]
 
     def test_errors_for_invalid_sku(self):
         uow = FakeUnitOfWork()
-        messagebus.handle(events.BatchCreated("b1", "AREALSKU", 100, None), uow)
+        mb = messagebus.MessageBus()
+        mb.handle(events.BatchCreated("b1", "AREALSKU", 100, None), uow)
 
         with pytest.raises(handlers.InvalidSku, match="Invalid sku NONEXISTENTSKU"):
-            messagebus.handle(events.AllocationRequired("o1", "NONEXISTENTSKU", 10), uow)
+            mb.handle(events.AllocationRequired("o1", "NONEXISTENTSKU", 10), uow)
 
     def test_commits(self):
         uow = FakeUnitOfWork()
-        messagebus.handle(events.BatchCreated("b1", "OMINOUS-MIRROR", 100, None), uow)
-        messagebus.handle(events.AllocationRequired("o1", "OMINOUS-MIRROR", 10), uow)
+        mb = messagebus.MessageBus()
+        mb.handle(events.BatchCreated("b1", "OMINOUS-MIRROR", 100, None), uow)
+        mb.handle(events.AllocationRequired("o1", "OMINOUS-MIRROR", 10), uow)
         assert uow.committed
 
 
 class TestChangeBatchQuantity:
     def test_changes_available_quantity(self):
         uow = FakeUnitOfWork()
-        messagebus.handle(events.BatchCreated("batch1", "ADORABLE-SETTEE", 100, None), uow)
+        mb = messagebus.MessageBus()
+        mb.handle(events.BatchCreated("batch1", "ADORABLE-SETTEE", 100, None), uow)
         [batch] = uow.products.get(sku="ADORABLE-SETTEE").batches
         assert batch.available_quantity == 100
 
-        messagebus.handle(events.BatchQuantityChanged("batch1", 50), uow)
+        mb.handle(events.BatchQuantityChanged("batch1", 50), uow)
 
         assert batch.available_quantity == 50
 
     def test_reallocates_if_necessary(self):
         uow = FakeUnitOfWork()
+        mb = messagebus.MessageBus()
         event_history = [
             events.BatchCreated("batch1", "INDIFFERENT-TABLE", 50, None),
             events.BatchCreated("batch2", "INDIFFERENT-TABLE", 50, date.today()),
@@ -61,18 +68,19 @@ class TestChangeBatchQuantity:
             events.AllocationRequired("order2", "INDIFFERENT-TABLE", 20),
         ]
         for e in event_history:
-            messagebus.handle(e, uow)
+            mb.handle(e, uow)
         [batch1, batch2] = uow.products.get(sku="INDIFFERENT-TABLE").batches
         assert batch1.available_quantity == 10
         assert batch2.available_quantity == 50
 
-        messagebus.handle(events.BatchQuantityChanged("batch1", 25), uow)
+        mb.handle(events.BatchQuantityChanged("batch1", 25), uow)
 
         assert batch1.available_quantity == 5
         assert batch2.available_quantity == 30
 
     def test_reallocates_if_necessary_isolated(self):
-        uow = FakeUnitOfWorkWithFakeMessageBus()
+        uow = FakeUnitOfWork()
+        mb = messagebus.MessageBus()
         event_history = [
             events.BatchCreated("batch1", "INDIFFERENT-TABLE", 50, None),
             events.BatchCreated("batch2", "INDIFFERENT-TABLE", 50, date.today()),
@@ -80,13 +88,15 @@ class TestChangeBatchQuantity:
             events.AllocationRequired("order2", "INDIFFERENT-TABLE", 20),
         ]
         for e in event_history:
-            messagebus.handle(e, uow)
+            mb.handle(e, uow)
         [batch1, batch2] = uow.products.get(sku="INDIFFERENT-TABLE").batches
         assert batch1.available_quantity == 10
         assert batch2.available_quantity == 50
 
-        messagebus.handle(events.BatchQuantityChanged("batch1", 25), uow)
-        [reallocation_event] = uow.events_published
+        fmb = FakeMessageBus()
+
+        fmb.handle(events.BatchQuantityChanged("batch1", 25), uow)
+        [reallocation_event] = fmb.events_published
         assert isinstance(reallocation_event, events.AllocationRequired)
         assert reallocation_event.orderid in {'order1', 'order2'}
         assert reallocation_event.sku == 'INDIFFERENT-TABLE'
@@ -136,3 +146,17 @@ class FakeUnitOfWorkWithFakeMessageBus(FakeUnitOfWork):
             while product.events:
                 self.events_published.append(product.events.pop(0))
         return []
+
+
+class FakeMessageBus(messagebus.AbstractMessageBus):
+    def __init__(self):
+        self.events_published = []  # type: List[events.Event]
+        self.handlers = {
+            events.AllocationRequired: [self.publish],
+            events.BatchCreated: [self.publish],
+            events.BatchQuantityChanged: [self.publish],
+            events.OutOfStock: [self.publish],
+        }
+
+    def publish(self, e, uow):
+        self.events_published.append(e)
