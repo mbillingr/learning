@@ -1,7 +1,8 @@
 import abc
 from typing import Set
-from allocation.domain import model
+
 from allocation.adapters import orm
+from allocation.domain import model
 
 
 class AbstractRepository(abc.ABC):
@@ -50,5 +51,7 @@ class SqlAlchemyRepository(AbstractRepository):
     def _get(self, sku):
         return self.session.query(model.Product).filter_by(sku=sku).first()
 
-    def _get_by_batchref(self, batchref) -> model.Product:
-        return self.session.query(model.Product).join(model.Batch).filter(orm.batches.c.reference == batchref,).first()
+    def _get_by_batchref(self, batchref):
+        return self.session.query(model.Product).join(model.Batch).filter(
+            orm.batches.c.reference == batchref,
+        ).first()

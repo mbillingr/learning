@@ -1,27 +1,29 @@
-from typing import Dict, Type, List, Callable
+from __future__ import annotations
+
+from typing import List, Dict, Callable, Type, TYPE_CHECKING
 
 from allocation.domain import events
-from allocation.service_layer import unit_of_work, handlers
+from . import handlers
+
+if TYPE_CHECKING:
+    from . import unit_of_work
 
 
-class AbstractMessageBus:
-    handlers: Dict[Type[events.Event], List[Callable]]
-
-    def handle(self, event: events.Event, uow: unit_of_work.AbstractUnitOfWork):
-        results = []
-        queue = [event]
-        while queue:
-            event = queue.pop(0)
-            for handler in self.handlers[type(event)]:
-                results.append(handler(event, uow=uow))
-                queue.extend(uow.collect_new_events())
-        return results
+def handle(event: events.Event, uow: unit_of_work.AbstractUnitOfWork):
+    results = []
+    queue = [event]
+    while queue:
+        event = queue.pop(0)
+        for handler in HANDLERS[type(event)]:
+            results.append(handler(event, uow=uow))
+            queue.extend(uow.collect_new_events())
+    return results
 
 
-class MessageBus(AbstractMessageBus):
-    handlers = {
-        events.AllocationRequired: [handlers.allocate],
-        events.BatchCreated: [handlers.add_batch],
-        events.BatchQuantityChanged: [handlers.change_batch_quantity],
-        events.OutOfStock: [handlers.send_out_of_stock_notification],
-    }
+HANDLERS = {
+    events.BatchCreated: [handlers.add_batch],
+    events.BatchQuantityChanged: [handlers.change_batch_quantity],
+    events.AllocationRequired: [handlers.allocate],
+    events.OutOfStock: [handlers.send_out_of_stock_notification],
+
+}  # type: Dict[Type[events.Event], List[Callable]]

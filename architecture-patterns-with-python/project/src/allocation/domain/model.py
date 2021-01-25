@@ -1,12 +1,10 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import date
 from typing import Optional, List, Set
-from allocation.domain import events
 
-
-class OutOfStock(Exception):
-    pass
+from . import events
 
 
 class Product:
@@ -15,7 +13,7 @@ class Product:
         self.sku = sku
         self.batches = batches
         self.version_number = version_number
-        self.events = []  # type List[events.Event]
+        self.events = []  # type: List[events.Event]
 
     def allocate(self, line: OrderLine) -> str:
         try:
@@ -27,14 +25,16 @@ class Product:
             return batch.reference
         except StopIteration:
             self.events.append(events.OutOfStock(line.sku))
-            # raise OutOfStock(f'Out of stock for sku {line.sku}')
+            return None
 
     def change_batch_quantity(self, ref: str, qty: int):
         batch = next(b for b in self.batches if b.reference == ref)
         batch._purchased_quantity = qty
         while batch.available_quantity < 0:
             line = batch.deallocate_one()
-            self.events.append(events.AllocationRequired(line.orderid, line.sku, line.qty))
+            self.events.append(
+                events.AllocationRequired(line.orderid, line.sku, line.qty)
+            )
 
 
 @dataclass(unsafe_hash=True)
@@ -46,7 +46,7 @@ class OrderLine:
 
 class Batch:
     def __init__(
-        self, ref: str, sku: str, qty: int, eta: Optional[date]
+            self, ref: str, sku: str, qty: int, eta: Optional[date]
     ):
         self.reference = ref
         self.sku = sku
@@ -76,10 +76,6 @@ class Batch:
         if self.can_allocate(line):
             self._allocations.add(line)
 
-    def deallocate(self, line: OrderLine):
-        if line in self._allocations:
-            self._allocations.remove(line)
-
     def deallocate_one(self) -> OrderLine:
         return self._allocations.pop()
 
@@ -93,4 +89,3 @@ class Batch:
 
     def can_allocate(self, line: OrderLine) -> bool:
         return self.sku == line.sku and self.available_quantity >= line.qty
-
