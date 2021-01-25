@@ -153,8 +153,8 @@ class FakeMessageBus(messagebus.AbstractMessageBus):
         self.events_published = []  # type: List[events.Event]
         self.handlers = {
             events.AllocationRequired: [self.publish],
-            events.BatchCreated: [self.publish],
-            events.BatchQuantityChanged: [self.publish],
+            events.BatchCreated: [handlers.add_batch],
+            events.BatchQuantityChanged: [handlers.change_batch_quantity],
             events.OutOfStock: [self.publish],
         }
 
