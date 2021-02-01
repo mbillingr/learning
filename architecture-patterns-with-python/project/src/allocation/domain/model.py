@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Optional, List, Set
 
-from . import events, commands
+from . import commands, events
 
 
 class Product:
@@ -22,6 +22,10 @@ class Product:
             )
             batch.allocate(line)
             self.version_number += 1
+            self.events.append(events.Allocated(
+                orderid=line.orderid, sku=line.sku, qty=line.qty,
+                batchref=batch.reference,
+            ))
             return batch.reference
         except StopIteration:
             self.events.append(events.OutOfStock(line.sku))
