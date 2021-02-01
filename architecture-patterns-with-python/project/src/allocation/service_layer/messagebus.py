@@ -56,13 +56,14 @@ def handle_command(
         result = handler(command, uow=uow)
         queue.extend(uow.collect_new_events())
         return result
-    except Exception:
+    except Exception as e:
         logger.exception('Exception handling command %s', command)
         raise
 
 
 EVENT_HANDLERS = {
-    events.Allocated: [handlers.publish_allocated_event],
+    events.Allocated: [handlers.publish_allocated_event,
+                       handlers.add_allocation_to_read_model],
     events.OutOfStock: [handlers.send_out_of_stock_notification],
 }  # type: Dict[Type[events.Event], List[Callable]]
 
